@@ -10,8 +10,8 @@ fn main() {
     let mut count = 4;
     loop {
         let mut is_start_of_packet = true;
-        'sop_detection: for i in 0..3 {
-            for j in i + 1..4 {
+        'sop_detection: for i in 0..4 {
+            for j in (i + 1)..4 {
                 if last_four[i] == last_four[j] {
                     is_start_of_packet = false;
                     count += 1;
