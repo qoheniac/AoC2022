@@ -1,4 +1,4 @@
-use std::{fs, collections::HashMap};
+use std::{collections::HashMap, fs};
 
 struct Dir {
     parent: Option<usize>,
@@ -8,7 +8,6 @@ struct Dir {
 }
 
 fn main() {
-
     // initialize file system with empty root directory
     let mut cwd = 0;
     let mut fs = vec![Dir {
@@ -23,7 +22,6 @@ fn main() {
     for line in contents.lines() {
         let words: Vec<&str> = line.split_whitespace().collect();
         if words[0] == "$" {
-
             // change directory
             if words[1] == "cd" {
                 cwd = match words[2] {
@@ -33,10 +31,9 @@ fn main() {
                 }
             }
         } else if words[0] == "dir" {
-
             // add directory
             let name = words[1];
-            if ! fs[cwd].children.contains_key(name) {
+            if !fs[cwd].children.contains_key(name) {
                 let index = fs.len();
                 fs[cwd].children.insert(name.to_string(), index);
                 fs.push(Dir {
@@ -47,10 +44,9 @@ fn main() {
                 });
             }
         } else {
-
             // add file and increase size of parent directories
             let name = words[1];
-            if ! fs[cwd].content.contains_key(name) {
+            if !fs[cwd].content.contains_key(name) {
                 let size: u32 = words[0].parse().unwrap();
                 fs[cwd].content.insert(name.to_string(), size);
                 let mut index = cwd;
