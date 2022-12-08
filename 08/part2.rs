@@ -17,7 +17,7 @@ fn main() {
     for i in 0..row_number {
         for j in 0..column_number {
             let height = forrest[i][j];
-            
+
             // look up
             let mut up_score = 0;
             for k in (0..i).rev() {
@@ -38,7 +38,7 @@ fn main() {
 
             // look right
             let mut right_score = 0;
-            for k in (j+1)..column_number {
+            for k in (j + 1)..column_number {
                 right_score += 1;
                 if forrest[i][k] >= height {
                     break;
@@ -47,7 +47,7 @@ fn main() {
 
             // look down
             let mut down_score = 0;
-            for k in (i+1)..row_number {
+            for k in (i + 1)..row_number {
                 down_score += 1;
                 if forrest[k][j] >= height {
                     break;
