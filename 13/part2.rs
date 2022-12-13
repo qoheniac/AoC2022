@@ -42,41 +42,15 @@ impl Packet {
 
 impl PartialOrd for Packet {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match self {
-            Self::Integer(self_num) => match other {
-                Self::Integer(other_num) => self_num.partial_cmp(other_num),
-                Self::List(_) => {
-                    Self::List(vec![Self::Integer(*self_num)]).partial_cmp(other)
-                }
-            },
-            Self::List(self_list) => match other {
-                Self::Integer(other_num) => {
-                    self.partial_cmp(&Self::List(vec![Self::Integer(*other_num)]))
-                }
-                Self::List(other_list) => {
-                    let mut self_elements = self_list.iter();
-                    let mut other_elements = other_list.iter();
-                    loop {
-                        let self_next = self_elements.next();
-                        let other_next = other_elements.next();
-                        match self_next {
-                            Some(self_element) => match other_next {
-                                Some(other_element) => {
-                                    match self_element.partial_cmp(other_element) {
-                                        Some(Ordering::Equal) => (),
-                                        other_option => break other_option,
-                                    }
-                                }
-                                None => break Some(Ordering::Greater),
-                            },
-                            None => match other_next {
-                                Some(_) => break Some(Ordering::Less),
-                                None => break Some(Ordering::Equal),
-                            },
-                        }
-                    }
-                }
-            },
+        match (self, other) {
+            (Self::Integer(self_num), Self::Integer(other_num)) => self_num.partial_cmp(other_num),
+            (Self::Integer(self_num), Self::List(_)) => {
+                Self::List(vec![Self::Integer(*self_num)]).partial_cmp(other)
+            }
+            (Self::List(_), Self::Integer(other_num)) => {
+                self.partial_cmp(&Self::List(vec![Self::Integer(*other_num)]))
+            }
+            (Self::List(self_list), Self::List(other_list)) => self_list.partial_cmp(other_list),
         }
     }
 }
