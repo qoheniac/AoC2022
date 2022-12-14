@@ -99,7 +99,7 @@ fn main() {
     let mut count = 0;
     'producing: loop {
         let [mut x, mut y] = source;
-        'falling: loop {
+        loop {
             let [i, j] = [x - limits.xmin, y - limits.ymin];
             if limits.is_outside([x, y + 1]) {
                 break 'producing;
@@ -116,7 +116,7 @@ fn main() {
                 } else {
                     cave[j][i] = Tile::Sand;
                     count += 1;
-                    break 'falling;
+                    break;
                 }
             }
             y = y + 1;
