@@ -1,5 +1,8 @@
-use std::{io::{prelude::*, stdout},fs::{File, read_to_string}};
-use image::{Frame, RgbaImage, Rgba, codecs::gif::GifEncoder};
+use image::{codecs::gif::GifEncoder, Frame, Rgba, RgbaImage};
+use std::{
+    fs::{read_to_string, File},
+    io::{prelude::*, stdout},
+};
 
 #[derive(Clone, PartialEq)]
 enum Tile {
@@ -50,16 +53,19 @@ fn make_frame(cave: &Vec<Vec<Tile>>) -> Frame {
     let mut img = RgbaImage::new(width as u32, height as u32);
     for j in 0..height {
         for i in 0..width {
-            img.put_pixel(i as u32, j as u32, match cave[j][i] {
-                Tile::Air => Rgba([242,233,234,255]),
-                Tile::Rock => Rgba([183,176,156,255]),
-                Tile::Sand => Rgba([133,103,28,255]),
-            });
+            img.put_pixel(
+                i as u32,
+                j as u32,
+                match cave[j][i] {
+                    Tile::Air => Rgba([242, 233, 234, 255]),
+                    Tile::Rock => Rgba([183, 176, 156, 255]),
+                    Tile::Sand => Rgba([133, 103, 28, 255]),
+                },
+            );
         }
     }
     Frame::new(img)
 }
-
 
 fn main() {
     let contents = read_to_string("input").unwrap();
@@ -138,9 +144,9 @@ fn main() {
                         break 'producing;
                     }
                     if count % 1000 == 0 {
-                    print!("\r{:3.0}%", 100 * count / 23921);
-                    stdout().flush().unwrap();
-                    encoder.encode_frame(make_frame(&cave)).unwrap();
+                        print!("\r{:3.0}%", 100 * count / 23921);
+                        stdout().flush().unwrap();
+                        encoder.encode_frame(make_frame(&cave)).unwrap();
                     }
                     break;
                 }
