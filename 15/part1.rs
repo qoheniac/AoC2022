@@ -1,4 +1,4 @@
-use std::{fs::read_to_string, ops::Range};
+use std::{collections::HashSet, fs::read_to_string, ops::Range};
 
 const SENSOR_PREFIX: &str = "Sensor at ";
 const BEACON_PREFIX: &str = "closest beacon is at ";
@@ -15,6 +15,7 @@ fn distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
 fn main() {
     let contents = read_to_string("input").unwrap();
     let mut sensors = Vec::new();
+    let mut beacons = HashSet::new();
     for line in contents.lines() {
         let mut devices = line.split(": ");
         let mut sensor_loc = strip_next(&mut devices, SENSOR_PREFIX).split(", ");
@@ -24,6 +25,7 @@ fn main() {
         let beacon_x: i32 = strip_next(&mut beacon_loc, "x=").parse().unwrap();
         let beacon_y: i32 = strip_next(&mut beacon_loc, "y=").parse().unwrap();
         let beacon_distance = distance(sensor_x, sensor_y, beacon_x, beacon_y);
+        beacons.insert([beacon_x, beacon_y]);
         sensors.push([sensor_x, sensor_y, beacon_distance]);
     }
 
@@ -31,7 +33,7 @@ fn main() {
     for [x, y, d] in &sensors {
         let max = d - (y - ROW).abs();
         if !max.is_negative() {
-            beacon_free_ranges.push(x - max..x + max);
+            beacon_free_ranges.push(x - max..x + max + 1);
         }
     }
 
@@ -56,5 +58,10 @@ fn main() {
             .iter()
             .map(|range| range.len())
             .sum::<usize>()
+            - beacons
+                .iter()
+                .filter(|beacon| beacon[1] == ROW)
+                .collect::<Vec<&[i32; 2]>>()
+                .len()
     )
 }
