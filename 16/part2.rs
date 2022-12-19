@@ -33,7 +33,7 @@ fn best_pressure(
             if next_remaining > 2 {
                 dest_pressure += best_pressure(
                     dest_key,
-                    remaining - distance - 1,
+                    next_remaining,
                     next_open_valve_keys,
                     valves,
                     useful_valves,
