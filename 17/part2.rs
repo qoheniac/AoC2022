@@ -38,7 +38,7 @@ struct Rock<'a> {
 }
 
 const FALL: Point = Point { x: 0, y: -1 };
-const WIN_WIDTH: usize = 4;
+const WIN_WIDTH: usize = 5;
 const FINAL_COUNT: usize = 1000000000000;
 
 fn is_empty(location: Point, resting: &HashSet<Rock>) -> bool {
