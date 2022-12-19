@@ -106,36 +106,28 @@ fn main() {
         distances.insert(*loc_key, distances_from_loc);
     }
 
-    // find every way to assign the useful valves to Santa and the elephant
+    // find every way to assign the useful valves to two valve operators
     let mut assignments = vec![[HashSet::new(), HashSet::new()]];
     for key in useful_valves {
         for i in 0..assignments.len() {
-            let [assign_santa, assign_elephant] = &assignments[i];
-            let mut new_assign_santa = assign_santa.clone();
-            new_assign_santa.insert(key);
-            assignments.push([new_assign_santa, assign_elephant.clone()]);
+            let [assign1, assign2] = &assignments[i];
+            let mut new_assign1 = assign1.clone();
+            new_assign1.insert(key);
+            assignments.push([new_assign1, assign2.clone()]);
             assignments[i][1].insert(key);
         }
     }
 
     // calculate and output maximum pressure that can be released in 26 min by any assignment
     let mut pressure = 0;
-    for (i, [assign_santa, assign_elephant]) in assignments.iter().enumerate() {
+    for (i, [assign1, assign2]) in assignments.iter().enumerate() {
         if i % (assignments.len() / 100) == 0 {
             print!("\r{:3.0}%", 100 * i / assignments.len());
             stdout().flush().unwrap();
         }
-        let pressure_santa =
-            best_pressure("AA", 26, HashSet::new(), &valves, &assign_santa, &distances);
-        let pressure_elephant = best_pressure(
-            "AA",
-            26,
-            HashSet::new(),
-            &valves,
-            &assign_elephant,
-            &distances,
-        );
-        pressure = pressure.max(pressure_santa + pressure_elephant);
+        let pressure1 = best_pressure("AA", 26, HashSet::new(), &valves, &assign1, &distances);
+        let pressure2 = best_pressure("AA", 26, HashSet::new(), &valves, &assign2, &distances);
+        pressure = pressure.max(pressure1 + pressure2);
     }
     println!("\r{}", pressure)
 }
