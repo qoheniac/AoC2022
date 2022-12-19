@@ -1,13 +1,14 @@
 use std::{
-    collections::HashSet,
+    collections::{HashSet, VecDeque},
     fs::read_to_string,
+    io::{prelude::*, stdout},
     ops::{Add, AddAssign},
 };
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 struct Point {
-    x: i32,
-    y: i32,
+    x: i64,
+    y: i64,
 }
 
 impl Add for Point {
@@ -37,7 +38,8 @@ struct Rock<'a> {
 }
 
 const FALL: Point = Point { x: 0, y: -1 };
-const N: u64 = 1000000000000;
+const WIN_WIDTH: usize = 4;
+const FINAL_COUNT: usize = 1000000000000;
 
 fn is_empty(location: Point, resting: &HashSet<Rock>) -> bool {
     location.y > 0
@@ -47,59 +49,6 @@ fn is_empty(location: Point, resting: &HashSet<Rock>) -> bool {
                 .iter()
                 .all(|rel| rock.location + *rel != location)
         })
-}
-
-fn height(n: i32, contents: &str, basic_shapes: &Vec<Vec<Point>>) -> i32 {
-    let mut shapes = basic_shapes.iter().cycle();
-    let mut jet = contents.trim().chars().cycle();
-    let mut resting = HashSet::new();
-    let mut highest = [0; 7];
-    for _ in 0..n {
-        let mut falling = Rock {
-            location: Point {
-                x: 2,
-                y: highest.iter().max().unwrap() + 4,
-            },
-            shape: shapes.next().unwrap(),
-        };
-        loop {
-            let push = Point {
-                x: match jet.next() {
-                    Some('>') => 1,
-                    _ => -1,
-                },
-                y: 0,
-            };
-            if falling
-                .shape
-                .iter()
-                .all(|rel| is_empty(falling.location + *rel + push, &resting))
-            {
-                falling.location += push;
-            }
-            if falling
-                .shape
-                .iter()
-                .all(|rel| is_empty(falling.location + *rel + FALL, &resting))
-            {
-                falling.location += FALL;
-            } else {
-                resting.insert(falling);
-                for rel in falling.shape {
-                    let point = falling.location + *rel;
-                    highest[point.x as usize] = highest[point.x as usize].max(point.y);
-                }
-                break;
-            }
-        }
-        let rocks: Vec<Rock> = resting.iter().cloned().collect();
-        for rock in rocks {
-            if rock.location.y + rock.shape.iter().map(|rel| rel.y).max().unwrap() < *highest.iter().min().unwrap() {
-                resting.remove(&rock);
-            }
-        }
-    }
-    *highest.iter().max().unwrap()
 }
 
 fn main() {
@@ -138,18 +87,95 @@ fn main() {
         ],
     ];
     let contents = read_to_string("input").unwrap();
-    let min_length = (contents.trim().len() * basic_shapes.len()) as i32;
-    let mut length = min_length;
-    loop {
-        let height1 = height(length, &contents, &basic_shapes);
-        println!("{}", height1 * 2);
-        let height2 = height(length * 2, &contents, &basic_shapes);
-        println!("{}", height2);
-        if height2 == height1 * 2 {
-            println!("repitition!"); // happens at height2 = 4264562 (after 27 steps)
-            break;
-        }
-        length += min_length;
-    }
-}
+    let lcm = contents.trim().len() * basic_shapes.len();
+    let mut shapes = basic_shapes.iter().cycle();
+    let mut jet = contents.trim().chars().cycle();
+    let mut resting = HashSet::new();
+    let mut highest = [0; 7];
+    let mut heights = VecDeque::new();
+    let mut count = 0;
+    let mut max_count = None;
+    let mut cycles = 0;
+    'main_loop: loop {
+        print!("\r{}", count / lcm);
+        stdout().flush().unwrap();
+        loop {
+            count += 1;
+            let mut falling = Rock {
+                location: Point {
+                    x: 2,
+                    y: highest.iter().max().unwrap() + 4,
+                },
+                shape: shapes.next().unwrap(),
+            };
+            loop {
+                let push = Point {
+                    x: match jet.next() {
+                        Some('>') => 1,
+                        _ => -1,
+                    },
+                    y: 0,
+                };
+                if falling
+                    .shape
+                    .iter()
+                    .all(|rel| is_empty(falling.location + *rel + push, &resting))
+                {
+                    falling.location += push;
+                }
+                if falling
+                    .shape
+                    .iter()
+                    .all(|rel| is_empty(falling.location + *rel + FALL, &resting))
+                {
+                    falling.location += FALL;
+                } else {
+                    resting.insert(falling);
+                    for rel in falling.shape {
+                        let point = falling.location + *rel;
+                        highest[point.x as usize] = highest[point.x as usize].max(point.y);
+                    }
+                    break;
+                }
+            }
+            let rocks: Vec<Rock> = resting.iter().cloned().collect();
+            for rock in rocks {
+                if rock.location.y + rock.shape.iter().map(|rel| rel.y).max().unwrap()
+                    < *highest.iter().min().unwrap()
+                {
+                    resting.remove(&rock);
+                }
+            }
 
+            if let Some(c) = max_count {
+                if count == c {
+                    break 'main_loop;
+                }
+            }
+
+            if count % lcm == 0 {
+                break;
+            }
+        }
+        heights.push_front(*highest.iter().max().unwrap());
+        let mut windows = heights.as_slices().0.windows(WIN_WIDTH).map(|win| {
+            win.windows(2)
+                .map(|pair| pair[0] - pair[1])
+                .collect::<Vec<i64>>()
+        });
+        if let Some(new_window) = windows.next() {
+            for (i, ref_window) in windows.enumerate() {
+                if new_window == ref_window {
+                    cycles = i + 1;
+                    max_count = Some(count + (FINAL_COUNT - count) % (cycles * lcm));
+                    break;
+                }
+            }
+        }
+    }
+    println!(
+        "\r{}",
+        *highest.iter().max().unwrap() as usize
+            + (heights[0] - heights[cycles]) as usize * (FINAL_COUNT - count) / (cycles * lcm)
+    )
+}
