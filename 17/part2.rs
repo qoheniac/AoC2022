@@ -179,7 +179,7 @@ fn main() {
     }
     println!(
         "\r{}",
-        *highest.iter().max().unwrap() as usize
-            + (heights[0] - heights[cycles]) as usize * (FINAL_COUNT - count) / (cycles * lcm)
+        *highest.iter().max().unwrap()
+            + (heights[0] - heights[cycles]) * ((FINAL_COUNT - count) / (cycles * lcm)) as i32
     )
 }
