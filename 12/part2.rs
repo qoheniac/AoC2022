@@ -52,8 +52,8 @@ fn main() {
 
                     // loop over reachable destinations
                     for (m, n) in [(0, -1), (-1, 0), (1, 0), (0, 1)] {
-                        let i = (i_short as i32 + m) as usize;  // -1 becomes usize::MAX and thus …
-                        let j = (j_short as i32 + n) as usize;  // … larger than width or height
+                        let i = (i_short as i32 + m) as usize; // -1 becomes usize::MAX and thus …
+                        let j = (j_short as i32 + n) as usize; // … larger than width or height
                         if i < height && j < width && elevation(grid[i][j]) <= e_short + 1 {
                             let alt = distance[i_short][j_short] + 1;
 
