@@ -167,7 +167,11 @@ fn main() {
             for (i, ref_window) in windows.enumerate() {
                 if new_window == ref_window {
                     cycles = i + 1;
-                    max_count = Some(count + (FINAL_COUNT - count) % (cycles * lcm));
+                    let remaining = (FINAL_COUNT - count) % (cycles * lcm);
+                    if remaining == 0 {
+                        break 'main_loop;
+                    }
+                    max_count = Some(count + remaining);
                     break;
                 }
             }
