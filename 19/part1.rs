@@ -74,7 +74,7 @@ fn geodes_crackable(blueprint: &Blueprint, robots: Robots, avails: Resources, ti
         if robot == GeodeBot {
             time_needed_geode = time_needed;
         } else if time_needed >= time_needed_geode {
-            continue 'robots;
+            continue;
         }
         let mut future_robots = robots.clone();
         future_robots
