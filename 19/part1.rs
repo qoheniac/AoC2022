@@ -35,59 +35,70 @@ type Robots = HashMap<Robot, u8>;
 type Resources = HashMap<Material, u8>;
 type Blueprint = HashMap<Robot, Resources>;
 
-// TODO: change this such that it chooses a robot to build next, see if that is possible in the
-// remaining time by extrapolating current production, and then go directly to that state in the
-// future, skipping intermediate steps
 fn geodes_crackable(blueprint: &Blueprint, robots: Robots, avails: Resources, time: u8) -> u8 {
-    let mut now_cracked = 0;
     if time == 0 {
-        return now_cracked;
+        return 0;
     }
-    let mut avails_plus_production = avails.clone();
+    let mut production = HashMap::new();
+    let mut geode_rate = 0;
     for (&robot, &number) in &robots {
         if let Some(material) = robot.crack() {
-            avails_plus_production
-                .entry(material)
-                .and_modify(|have| *have += number)
-                .or_insert(number);
+            production.insert(material, number);
         } else {
-            now_cracked += number;
+            geode_rate = number;
         }
     }
-    let mut later_cracked = 0;
-    for robot in [GeodeBot, ObsBot, ClayBot, OreBot] {
+
+    let mut future_geodes = 0;
+    let mut time_needed_geode = time + 1;
+    'robots: for robot in [GeodeBot, ObsBot, ClayBot, OreBot] {
         let costs = blueprint.get(&robot).unwrap();
-        if costs
-            .iter()
-            .all(|(material, need)| matches!(avails.get(material), Some(have) if have >= need))
-        {
-            let mut next_avails = avails_plus_production.clone();
-            for (&material, need) in costs {
-                next_avails.entry(material).and_modify(|have| *have -= need);
+        let mut time_needed = 1;
+        for (material, &need) in costs {
+            let mut have = 0;
+            if let Some(amount) = avails.get(material) {
+                have += amount;
             }
-            let mut next_robots = robots.clone();
-            next_robots
-                .entry(robot)
-                .and_modify(|number| *number += 1)
-                .or_insert(1);
-            later_cracked = later_cracked.max(geodes_crackable(
-                blueprint,
-                next_robots,
-                next_avails,
-                time - 1,
-            ));
-            if [GeodeBot, ObsBot].contains(&robot) {
-                return now_cracked + later_cracked;
+            if have < need {
+                if let Some(&rate) = production.get(material) {
+                    time_needed = time_needed.max(1 + (need - have + rate - 1) / rate);
+                } else {
+                    time_needed = 1 + time;
+                }
+                if time_needed >= time {
+                    future_geodes = future_geodes.max(geode_rate * time);
+                    continue 'robots;
+                }
             }
         }
+        if robot == GeodeBot {
+            time_needed_geode = time_needed;
+        } else if time_needed >= time_needed_geode {
+            continue 'robots;
+        }
+        let mut future_robots = robots.clone();
+        future_robots
+            .entry(robot)
+            .and_modify(|number| *number += 1)
+            .or_insert(1);
+        let mut future_avails = avails.clone();
+        for (&material, rate) in &production {
+            let gain = rate * time_needed;
+            future_avails
+                .entry(material)
+                .and_modify(|have| *have += gain)
+                .or_insert(gain);
+        }
+        for (&material, need) in costs {
+            future_avails
+                .entry(material)
+                .and_modify(|have| *have -= need);
+        }
+        let later_future_geodes =
+            geodes_crackable(blueprint, future_robots, future_avails, time - time_needed);
+        future_geodes = future_geodes.max(geode_rate * time_needed + later_future_geodes);
     }
-    later_cracked = later_cracked.max(geodes_crackable(
-        blueprint,
-        robots,
-        avails_plus_production,
-        time - 1,
-    ));
-    now_cracked + later_cracked
+    future_geodes
 }
 
 fn main() {
