@@ -106,13 +106,13 @@ fn main() {
     let contents = read_to_string("input").unwrap();
     let len = contents.lines().collect::<Vec<&str>>().len();
     for (i, line) in contents.lines().enumerate() {
-        print!("\r{:3}%", 100 * i / len);
+        print!("\r{:3}% ({})", 100 * i / len, result);
         stdout().flush().unwrap();
         let vals: Vec<u8> = line
             .split(|c: char| !c.is_numeric())
             .filter_map(|s| s.parse().ok())
             .collect();
-        result += vals[0]
+        result += vals[0] as u16
             * geodes_crackable(
                 &HashMap::from([
                     (OreBot, HashMap::from([(Ore, vals[1])])),
@@ -123,7 +123,7 @@ fn main() {
                 HashMap::from([(OreBot, 1)]),
                 HashMap::new(),
                 24,
-            );
+            ) as u16;
     }
-    println!("\r    \r{}", result)
+    println!("\x1B[2K\r{}", result)
 }
