@@ -115,7 +115,7 @@ fn main() {
     let mut result = 1;
     let contents = read_to_string("input").unwrap();
     for (i, line) in contents.lines().enumerate().take(3) {
-        print!("\r{:3}% ({})", 100 * i / 3, result);
+        print!("\r{}/3", i + 1);
         stdout().flush().unwrap();
         let vals: Vec<u8> = line
             .split(|c: char| !c.is_numeric())
@@ -133,5 +133,5 @@ fn main() {
             32,
         ) as u16;
     }
-    println!("\x1B[2K\r{}", result)
+    println!("\r{}", result)
 }

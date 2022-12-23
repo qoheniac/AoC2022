@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    fs::read_to_string,
-    io::{prelude::*, stdout},
-};
+use std::{collections::HashMap, fs::read_to_string};
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 enum Material {
@@ -114,10 +110,7 @@ fn geodes_crackable(blueprint: &Blueprint, robots: Robots, avails: Resources, ti
 fn main() {
     let mut result = 0;
     let contents = read_to_string("input").unwrap();
-    let len = contents.lines().collect::<Vec<&str>>().len();
-    for (i, line) in contents.lines().enumerate() {
-        print!("\r{:3}% ({})", 100 * i / len, result);
-        stdout().flush().unwrap();
+    for line in contents.lines() {
         let vals: Vec<u8> = line
             .split(|c: char| !c.is_numeric())
             .filter_map(|s| s.parse().ok())
@@ -135,5 +128,5 @@ fn main() {
                 24,
             ) as u16;
     }
-    println!("\x1B[2K\r{}", result)
+    println!("{}", result)
 }
