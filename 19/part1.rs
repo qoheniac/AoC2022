@@ -52,15 +52,12 @@ fn geodes_crackable(blueprint: &Blueprint, robots: Robots, avails: Resources, ti
     let mut future_geodes = 0;
     let mut time_needed_geode = time + 1;
     'robots: for robot in [GeodeBot, ObsBot, ClayBot, OreBot] {
-        if robot == OreBot {
-            if let Some(number) = robots.get(&OreBot) {
-                if blueprint.values().all(|costs| {
-                    if let Some(need) = costs.get(&Ore) {
-                        need <= number
-                    } else {
-                        true
-                    }
-                }) {
+        if let Some(material) = robot.crack() {
+            if let Some(number) = robots.get(&robot) {
+                if blueprint
+                    .values()
+                    .all(|costs| !matches!(costs.get(&material), Some(need) if number<need))
+                {
                     continue;
                 }
             }
