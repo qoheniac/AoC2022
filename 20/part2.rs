@@ -1,7 +1,7 @@
 use std::fs::read_to_string;
 
 struct Entry {
-    id: usize,
+    id: usize, // memorize original order
     value: i64,
 }
 
@@ -15,6 +15,7 @@ impl Entry {
 }
 
 fn main() {
+    // read input
     let contents = read_to_string("input").unwrap();
     let mut file: Vec<Entry> = contents
         .lines()
@@ -22,6 +23,8 @@ fn main() {
         .map(|(id, line)| Entry::new(id, 811589153 * line.parse::<i64>().unwrap()))
         .collect();
     let length = file.len();
+
+    // mixing
     for _ in 0..10 {
         for id in 0..length {
             let (old_index, value) = file
@@ -37,11 +40,15 @@ fn main() {
             }
         }
     }
+
+    // find zero
     let i0 = file
         .iter()
         .enumerate()
         .find_map(|(index, entry)| (entry.value == 0).then_some(index))
         .unwrap();
+
+    // calculate result
     let mut sum = 0;
     for k in 1..4 {
         sum += file[(i0 + 1000 * k) % length].value;

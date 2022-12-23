@@ -15,12 +15,15 @@ impl Entry {
 }
 
 fn main() {
+    // read input
     let contents = read_to_string("input").unwrap();
     let mut file: Vec<Entry> = contents
         .lines()
         .map(|line| Entry::new(line.parse().unwrap()))
         .collect();
     let length = file.len() as i16;
+
+    // mixing
     for _ in 0..length {
         let (old_index, value) = file
             .iter()
@@ -35,11 +38,15 @@ fn main() {
         }
         file[new_index].was_moved = true;
     }
+
+    // find zero
     let i0 = file
         .iter()
         .enumerate()
         .find_map(|(index, entry)| (entry.value == 0).then_some(index))
         .unwrap();
+
+    // calculate result
     let mut sum = 0;
     for k in 1..4 {
         sum += file[((i0 + 1000 * k) % length as usize)].value;
