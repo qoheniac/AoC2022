@@ -3,7 +3,6 @@ use std::fs::read_to_string;
 struct Entry {
     id: usize,
     value: i64,
-    was_moved: bool,
 }
 
 impl Entry {
@@ -11,7 +10,6 @@ impl Entry {
         Self {
             id: id,
             value: value,
-            was_moved: false,
         }
     }
 }
@@ -37,7 +35,6 @@ fn main() {
             } else {
                 file[new_index..old_index + 1].rotate_right(1);
             }
-            file[new_index].was_moved = true;
         }
     }
     let i0 = file
