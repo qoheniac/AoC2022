@@ -80,9 +80,9 @@ use Instruction::*;
 
 fn main() {
     let contents = read_to_string("input").unwrap();
+    let mut parts = contents.split("\n\n");
 
     // parse map
-    let mut parts = contents.split("\n\n");
     let map_string = parts.next().unwrap();
     let width = map_string.lines().map(|line| line.len()).max().unwrap();
     let mut map = Vec::new();
