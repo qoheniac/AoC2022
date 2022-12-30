@@ -367,7 +367,7 @@ fn main() {
                         edge_option = Some(edge);
                     }
 
-                    // if out if bounds change state based on entrance edge
+                    // if out of bounds change state based on entrance edge
                     if let Some(edge) = edge_option {
                         let mut d1 = (old_l.x - old_l.y).abs();
                         let mut d2 = (max - old_l.x - old_l.y).abs();
