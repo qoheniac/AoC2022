@@ -123,11 +123,11 @@ fn add_walls_to_grid(
     grids: &mut HashMap<Face, Grid>,
     face: &Face,
     map_string: &str,
-    [first_row, first_col]: [usize; 2],
+    [face_i, face_j]: [usize; 2],
 ) {
     let lines = map_string.lines();
-    for (i, line) in lines.skip(first_row * SIZE).take(SIZE).enumerate() {
-        for (j, c) in line.chars().skip(first_col * SIZE).take(SIZE).enumerate() {
+    for (i, line) in lines.skip(face_i * SIZE).take(SIZE).enumerate() {
+        for (j, c) in line.chars().skip(face_j * SIZE).take(SIZE).enumerate() {
             if c == '#' {
                 grids.get_mut(face).unwrap()[i][j] = Wall;
             }
@@ -135,11 +135,7 @@ fn add_walls_to_grid(
     }
 }
 
-fn id(p: Point) -> Point {
-    p
-}
-
-fn cw90(p: Point) -> Point {
+fn cw090(p: Point) -> Point {
     let max = SIZE as i32 - 1;
     Point {
         x: max - p.y,
@@ -163,20 +159,66 @@ fn cw270(p: Point) -> Point {
     }
 }
 
+fn cw360(p: Point) -> Point {
+    p
+}
+
 fn chain<F, G>(f: F, g: G) -> impl Fn(Point) -> Point
 where
     F: Fn(Point) -> Point,
     G: Fn(Point) -> Point,
 {
-    move |p| g(f(p))
+    move |p| f(g(p))
 }
 
 fn transformation(previous_edge: Edge, edge: &Edge) -> impl Fn(Point) -> Point {
     match (previous_edge, edge) {
-        (East, West) | (North, South) | (South, North) | (West, East) => id,
+        (East, West) | (North, South) | (South, North) | (West, East) => cw360,
         (East, South) | (North, East) | (South, West) | (West, North) => cw270,
         (East, East) | (North, North) | (South, South) | (West, West) => cw180,
-        (East, North) | (North, West) | (South, East) | (West, South) => cw90,
+        (East, North) | (North, West) | (South, East) | (West, South) => cw090,
+    }
+}
+
+fn identify_neighbor(
+    cube: &mut Cube,
+    face_index_map: &mut HashMap<Face, usize>,
+    face_indices: &Vec<[usize; 2]>,
+    face: Face,
+    edge: Edge,
+    idx_max: i32,
+) {
+    let origin = Point { x: 0, y: 0 };
+    let shift = cube.transformations.get(&face).unwrap()(origin);
+    let trans = if shift == cw090(origin) {
+        cw090
+    } else if shift == cw180(origin) {
+        cw180
+    } else if shift == cw270(origin) {
+        cw270
+    } else {
+        cw360
+    };
+
+    let dir = trans(match edge {
+        East => Point { x: 1, y: 0 },
+        North => Point { x: 0, y: 1 },
+        South => Point { x: 0, y: -1 },
+        West => Point { x: -1, y: 0 },
+    }) - shift;
+
+    let [face_i, face_j] = face_indices[*face_index_map.get(&face).unwrap()];
+    if let Ok(neighbor_index) = face_indices.binary_search(&[
+        (face_i as i32 - dir.y).rem_euclid(idx_max) as usize,
+        (face_j as i32 + dir.x).rem_euclid(idx_max) as usize,
+    ]) {
+        let (neighbor_face, neighbor_edge) = cube.connections.get(&(face, edge)).unwrap();
+        face_index_map
+            .entry(*neighbor_face)
+            .or_insert(neighbor_index);
+        cube.transformations
+            .entry(*neighbor_face)
+            .or_insert(Box::new(chain(trans, transformation(edge, neighbor_edge))));
     }
 }
 
@@ -206,7 +248,7 @@ fn main() {
             ((Left, North), (Top, West)),
             ((Right, North), (Top, East)),
         ]),
-        transformations: HashMap::from([(Top, Box::new(id) as Box<dyn Fn(Point) -> Point>)]),
+        transformations: HashMap::from([(Top, Box::new(cw360) as Box<dyn Fn(Point) -> Point>)]),
     };
 
     // read input
@@ -217,7 +259,7 @@ fn main() {
     let map_string = parts.next().unwrap();
     let width = map_string.lines().map(|line| line.len()).max().unwrap();
     let height = map_string.lines().count();
-    let mut top_left_corners = Vec::new();
+    let mut face_indices = Vec::new();
     let i_max = height / SIZE;
     let j_max = width / SIZE;
     for i in 0..i_max {
@@ -230,92 +272,37 @@ fn main() {
                 .nth(j * SIZE)
             {
                 if ".#".contains(c) {
-                    top_left_corners.push([i, j]);
+                    face_indices.push([i, j]);
                 }
             }
         }
     }
 
     // initialize identification and identify first face as top
-    let mut face_indices = HashMap::new();
+    let mut face_index_map = HashMap::new();
     let mut walls_added_to = HashSet::new();
-    face_indices.insert(Top, 0);
+    face_index_map.insert(Top, 0);
 
-    // identify neighbors
-    let idx_max = i_max.max(j_max) as i32;
     while walls_added_to.len() < face_indices.len() {
         // pick an identified face and add walls
-        let (&face, &index) = face_indices
+        let (&face, &index) = face_index_map
             .iter()
             .filter(|(f, _)| !walls_added_to.contains(*f))
             .nth(0)
             .unwrap();
-        add_walls_to_grid(&mut cube.grids, &face, &map_string, top_left_corners[index]);
+        add_walls_to_grid(&mut cube.grids, &face, &map_string, face_indices[index]);
         walls_added_to.insert(face);
-        let [i, j] = top_left_corners[index];
-        let o = Point { x: 0, y: 0 };
-        let p = cube.transformations.get(&face).unwrap()(o);
-        let trans = if p == cw90(o) {
-            cw90
-        } else if p == cw180(o) {
-            cw180
-        } else if p == cw270(o) {
-            cw270
-        } else {
-            id
-        };
-        let shift = trans(Point { x: 0, y: 0 });
 
-        // identify east neighbor
-        let dir = trans(Point { x: 1, y: 0 }) - shift;
-        if let Ok(neighbor_index) = top_left_corners.binary_search(&[
-            (i as i32 - dir.y).rem_euclid(idx_max) as usize,
-            (j as i32 + dir.x).rem_euclid(idx_max) as usize,
-        ]) {
-            let (neighbor_face, neighbor_edge) = cube.connections.get(&(face, East)).unwrap();
-            face_indices.entry(*neighbor_face).or_insert(neighbor_index);
-            cube.transformations
-                .entry(*neighbor_face)
-                .or_insert(Box::new(chain(trans, transformation(East, neighbor_edge))));
-        }
-
-        // identify north neighbor
-        let dir = trans(Point { x: 0, y: 1 }) - shift;
-        if let Ok(neighbor_index) = top_left_corners.binary_search(&[
-            (i as i32 - dir.y).rem_euclid(idx_max) as usize,
-            (j as i32 + dir.x).rem_euclid(idx_max) as usize,
-        ]) {
-            let (neighbor_face, neighbor_edge) = cube.connections.get(&(face, North)).unwrap();
-            face_indices.entry(*neighbor_face).or_insert(neighbor_index);
-            cube.transformations
-                .entry(*neighbor_face)
-                .or_insert(Box::new(chain(trans, transformation(North, neighbor_edge))));
-        }
-
-        // identify south neighbor
-        let dir = trans(Point { x: 0, y: -1 }) - shift;
-        if let Ok(neighbor_index) = top_left_corners.binary_search(&[
-            (i as i32 - dir.y).rem_euclid(idx_max) as usize,
-            (j as i32 + dir.x).rem_euclid(idx_max) as usize,
-        ]) {
-            let (neighbor_face, neighbor_edge) = cube.connections.get(&(face, South)).unwrap();
-            face_indices.entry(*neighbor_face).or_insert(neighbor_index);
-            cube.transformations
-                .entry(*neighbor_face)
-                .or_insert(Box::new(chain(trans, transformation(South, neighbor_edge))));
-        }
-
-        // identify west neighbor
-        let dir = trans(Point { x: -1, y: 0 }) - shift;
-        if let Ok(neighbor_index) = top_left_corners.binary_search(&[
-            (i as i32 - dir.y).rem_euclid(idx_max) as usize,
-            (j as i32 + dir.x).rem_euclid(idx_max) as usize,
-        ]) {
-            let (neighbor_face, neighbor_edge) = cube.connections.get(&(face, West)).unwrap();
-            face_indices.entry(*neighbor_face).or_insert(neighbor_index);
-            cube.transformations
-                .entry(*neighbor_face)
-                .or_insert(Box::new(chain(trans, transformation(West, neighbor_edge))));
+        // identify neighbors
+        for edge in [East, North, South, West] {
+            identify_neighbor(
+                &mut cube,
+                &mut face_index_map,
+                &face_indices,
+                face,
+                edge,
+                i_max.max(j_max) as i32,
+            );
         }
     }
 
@@ -339,7 +326,7 @@ fn main() {
     }
     let path = path;
 
-    //vinitialize state
+    // initialize state
     let mut face = Top;
     let mut location = Point {
         x: cube.grids.get_mut(&face).unwrap()[0]
@@ -430,7 +417,7 @@ fn main() {
     location.y = location.y.rem_euclid(SIZE as i32);
     velocity = cube.transformations.get(&face).unwrap()(velocity);
     velocity -= cube.transformations.get(&face).unwrap()(Point { x: 0, y: 0 });
-    let [i, j] = top_left_corners[*face_indices.get(&face).unwrap()];
+    let [i, j] = face_indices[*face_index_map.get(&face).unwrap()];
     println!(
         "{}",
         1000 * (SIZE as i32 - location.y + (i * SIZE) as i32)
