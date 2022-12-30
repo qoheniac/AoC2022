@@ -404,11 +404,10 @@ fn main() {
     }
 
     // print password
-    location = cube.transformations.get(&face).unwrap()(location);
-    location.x = location.x.rem_euclid(SIZE as i32);
-    location.y = location.y.rem_euclid(SIZE as i32);
-    velocity = cube.transformations.get(&face).unwrap()(velocity);
-    velocity -= cube.transformations.get(&face).unwrap()(Point { x: 0, y: 0 });
+    let trans = cube.transformations.get(&face).unwrap();
+    location = trans(location);
+    velocity = trans(velocity);
+    velocity -=trans(Point { x: 0, y: 0 });
     let [i, j] = face_indices[*face_index_map.get(&face).unwrap()];
     println!(
         "{}",
