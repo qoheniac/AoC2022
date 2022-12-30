@@ -119,22 +119,6 @@ fn connections_from_arr<const N: usize>(arr: [((Face, Edge), (Face, Edge)); N]) 
     connections
 }
 
-fn add_walls_to_grid(
-    grids: &mut HashMap<Face, Grid>,
-    face: &Face,
-    map_string: &str,
-    [face_i, face_j]: [usize; 2],
-) {
-    let lines = map_string.lines();
-    for (i, line) in lines.skip(face_i * SIZE).take(SIZE).enumerate() {
-        for (j, c) in line.chars().skip(face_j * SIZE).take(SIZE).enumerate() {
-            if c == '#' {
-                grids.get_mut(face).unwrap()[i][j] = Wall;
-            }
-        }
-    }
-}
-
 fn cw090(p: Point) -> Point {
     let max = SIZE as i32 - 1;
     Point {
@@ -224,16 +208,8 @@ fn identify_neighbor(
 
 fn main() {
     // define cube
-    let default_grid = [[Open; SIZE]; SIZE];
     let mut cube = Cube {
-        grids: HashMap::from([
-            (Back, default_grid.clone()),
-            (Bottom, default_grid.clone()),
-            (Front, default_grid.clone()),
-            (Left, default_grid.clone()),
-            (Right, default_grid.clone()),
-            (Top, default_grid.clone()),
-        ]),
+        grids: HashMap::new(),
         connections: connections_from_arr([
             ((Back, East), (Left, West)),
             ((Back, North), (Top, North)),
@@ -284,13 +260,29 @@ fn main() {
     face_index_map.insert(Top, 0);
 
     while walls_added_to.len() < face_indices.len() {
-        // pick an identified face and add walls
+        // pick an identified face
         let (&face, &index) = face_index_map
             .iter()
             .filter(|(f, _)| !walls_added_to.contains(*f))
             .nth(0)
             .unwrap();
-        add_walls_to_grid(&mut cube.grids, &face, &map_string, face_indices[index]);
+
+        // add walls
+        let mut grid = [[Open; SIZE]; SIZE];
+        let [face_i, face_j] = face_indices[index];
+        for (i, line) in map_string
+            .lines()
+            .skip(face_i * SIZE)
+            .take(SIZE)
+            .enumerate()
+        {
+            for (j, c) in line.chars().skip(face_j * SIZE).take(SIZE).enumerate() {
+                if c == '#' {
+                    grid[i][j] = Wall;
+                }
+            }
+        }
+        cube.grids.insert(face, grid);
         walls_added_to.insert(face);
 
         // identify neighbors
